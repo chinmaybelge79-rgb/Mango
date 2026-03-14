@@ -1,0 +1,59 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+model User {
+  id         String    @id @default(uuid())
+  email      String    @unique
+  password   String
+  created_at DateTime  @default(now())
+  accounts   Account[]
+}
+
+model Account {
+  id      String @id @default(uuid())
+  user_id String
+  balance Float  @default(100000.0)
+  equity  Float  @default(100000.0)
+  margin  Float  @default(0.0)
+  user    User   @relation(fields: [user_id], references: [id])
+}
+
+model Order {
+  id      String   @id @default(uuid())
+  user_id String
+  symbol  String
+  type    String   // 'MARKET', 'LIMIT', 'STOP'
+  side    String   // 'BUY' or 'SELL'
+  size    Float
+  price   Float?
+  status  String   // 'OPEN', 'FILLED', 'CANCELED'
+  created_at DateTime @default(now())
+}
+
+model Position {
+  id          String   @id @default(uuid())
+  user_id     String
+  symbol      String
+  side        String   // 'LONG' or 'SHORT'
+  entry_price Float
+  size        Float
+  pnl         Float    @default(0.0)
+  created_at  DateTime @default(now())
+}
+
+model Trade {
+  id      String   @id @default(uuid())
+  user_id String
+  symbol  String
+  side    String   // 'LONG' or 'SHORT'
+  entry   Float
+  exit    Float
+  profit  Float
+  date    DateTime @default(now())
+}

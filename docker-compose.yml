@@ -1,0 +1,43 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: mango-db
+    restart: always
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-mango_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-mango_password}
+      POSTGRES_DB: ${POSTGRES_DB:-mango_db}
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: mango-backend
+    restart: on-failure
+    depends_on:
+      - db
+    ports:
+      - "3000:3000"
+      - "8080:8080" # WebSocket dev port if needed. Assuming unified server.
+    environment:
+      DATABASE_URL: postgres://${POSTGRES_USER:-mango_user}:${POSTGRES_PASSWORD:-mango_password}@db:5432/${POSTGRES_DB:-mango_db}
+      PORT: 3000
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: mango-frontend
+    ports:
+      - "5173:5173"
+    environment:
+      VITE_API_URL: http://localhost:3000
+
+volumes:
+  pgdata:
