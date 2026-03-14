@@ -4,6 +4,8 @@ import http from 'http';
 import { WebSocketServer, WebSocket } from 'ws';
 import { PrismaClient } from '@prisma/client';
 import dotenv from 'dotenv';
+const apiKey = process.env.GOOGLE_GENERATIVE_AI_API_KEY || process.env.VITE_GOOGLE_GENERATIVE_AI_API_KEY;
+
 
 dotenv.config();
 
@@ -120,12 +122,12 @@ app.post('/api/orders', async (req, res) => {
     const order = await prisma.order.create({
       data: {
         user_id: DEMO_USER_ID,
-        symbol,
-        type,
-        side,
+        symbol: symbol as string,
+        type: type as string,
+        side: side as string,
         size: parseFloat(size),
-        price: price ? parseFloat(price) : currentPrices[symbol],
-        status: 'FILLED' // Auto fill for market demo
+        price: price ? parseFloat(price) : (currentPrices[symbol] ?? 0),
+        status: 'FILLED'
       }
     });
 
@@ -133,10 +135,10 @@ app.post('/api/orders', async (req, res) => {
     await prisma.position.create({
       data: {
         user_id: DEMO_USER_ID,
-        symbol,
-        side,
+        symbol: symbol as string,
+        side: side as string,
         size: parseFloat(size),
-        entry_price: order.price!
+        entry_price: order.price ?? (currentPrices[symbol] ?? 0)
       }
     });
 
@@ -148,7 +150,7 @@ app.post('/api/orders', async (req, res) => {
 
 app.get('/api/positions', async (req, res) => {
   const positions = await prisma.position.findMany({ where: { user_id: DEMO_USER_ID } });
-  
+
   // Calculate live PnL based on current prices
   const withPnL = positions.map((p: any) => {
     const currentPrice = currentPrices[p.symbol] || p.entry_price;
@@ -156,7 +158,7 @@ app.get('/api/positions', async (req, res) => {
     const pnl = diff * p.size;
     return { ...p, currentPrice, pnl };
   });
-  
+
   res.json(withPnL);
 });
 
